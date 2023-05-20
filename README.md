@@ -19,7 +19,7 @@ API_KEY = confik.get("PAYMOB_API_KEY")
 async def main():
     async with Paymob(api_key=API_KEY) as paymob:
         order = await paymob.create_order(data={})  # put order data here
-        payment = await paymob.pay(500, 'EGP', order.id, 'INTEGRATION_ID', data={})
+        payment = await paymob.request_payment(500, 'EGP', order.id, 'INTEGRATION_ID', data={})
 
 
 if __name__ == "__main__":

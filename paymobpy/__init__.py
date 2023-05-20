@@ -55,7 +55,7 @@ class Paymob:
 
         return CreateOrderResponse(**response)
 
-    async def pay(
+    async def request_payment(
         self,
         cents: int,
         currency: str,

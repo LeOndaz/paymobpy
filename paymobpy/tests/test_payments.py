@@ -75,7 +75,7 @@ async def test_create_order_without_shipping_with_delivery(paymob):
 async def test_create_payment(
     paymob: Paymob, order_with_delivery_needed: CreateOrderResponse
 ):
-    payment = await paymob.pay(
+    payment = await paymob.request_payment(
         500,
         "EGP",
         order_with_delivery_needed.id,
