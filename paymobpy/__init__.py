@@ -80,9 +80,12 @@ class Paymob:
 
         return response.json()
 
+    async def close_connection(self):
+        await self._client.aclose()
+
     async def __aenter__(self):
         await self.authenticate()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self._client.aclose()
+        await self.close_connection()
