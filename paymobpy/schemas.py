@@ -1,14 +1,14 @@
-from typing import Optional, List
+from typing import List, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, validator, root_validator
+from pydantic import BaseModel, root_validator, validator
 
 
 class AuthResponse(BaseModel):
     token: str
 
 
-class ShippingData(BaseModel):
+class Address(BaseModel):
     apartment: str
     email: str
     floor: str
@@ -18,10 +18,13 @@ class ShippingData(BaseModel):
     building: str
     phone_number: str
     postal_code: str
-    extra_description: str
     city: str
     country: str
     state: str
+
+
+class ShippingData(Address):
+    extra_description: str
 
 
 class ShippingDetails(BaseModel):
@@ -54,7 +57,7 @@ class CreateOrderRequest(BaseModel):
     shipping_data: ShippingData
     shipping_details: Optional[ShippingDetails]
 
-    @validator('merchant_order_id', always=True)
+    @validator("merchant_order_id", always=True)
     def validate_merchant_order_id(cls, value):
         if value is None:
             return str(uuid4())
@@ -68,15 +71,20 @@ class CreateOrderRequest(BaseModel):
 
     @root_validator()
     def validate_needs_shipping(cls, values):
-        if values.get('delivery_needed'):
+        if values.get("delivery_needed"):
             # TODO 2: The first check is useless, it depends on TODO: 1
-            assert 'shipping_data' in values, "You must provide shipping_data when delivery_needed=True"
-            assert 'shipping_details' in values, "You must provide shipping_details when delivery_needed=True"
+            assert (
+                "shipping_data" in values
+            ), "You must provide shipping_data when delivery_needed=True"
+            assert (
+                "shipping_details" in values
+            ), "You must provide shipping_details when delivery_needed=True"
 
         return values
 
 
 class CreateOrderResponse(BaseModel):
+    id: int
     token: str
     url: str
     order_url: str
@@ -90,3 +98,14 @@ class CreateOrderResponse(BaseModel):
     is_cancel: bool
     is_returned: bool
     is_canceled: bool
+    merchant_order_id: str
+
+
+class CreatePaymentKeyRequest(BaseModel):
+    expiration: int
+    billing_data: Address
+    integration_id: int
+
+
+class CreatePaymentKeyResponse(BaseModel):
+    token: str

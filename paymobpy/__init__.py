@@ -1,98 +1,87 @@
-import asyncio
-import json
-from uuid import uuid4
+from typing import Mapping
 
-import httpx
+from paymobpy.consts import URLs
 from paymobpy.exceptions import PaymobError
 from paymobpy.http_clients import PaymobClient
-from paymobpy.schemas import AuthResponse, CreateOrderResponse, CreateOrderRequest
-
-API_KEY = """
-ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnVZVzFsSWpvaWFXNXBkR2xoYkNJc0ltTnNZWE56SWpvaVRXVnlZMmhoYm5RaUxDSndjbTltYVd4bFgzQnJJam94TnpFM056bDkuX2hxcEp2Q1F0NFFpeWNDUXozYS1abGQ4dHhpeTI2QnBFS0ZuWC1HRmxIRldIalJ6OFEtVzBoa0RVaDEyaTk1RW9CRmMtZ0V6bmhDVUZXMVlqVzBCVWc=
-"""
-
-
-class URLs:
-    BASE_URL = "https://accept.paymob.com/api"
-    AUTH = "/auth/tokens"
-    CREATE_ORDER = "/ecommerce/orders"
+from paymobpy.schemas import (
+    AuthResponse,
+    CreateOrderRequest,
+    CreateOrderResponse,
+    CreatePaymentKeyRequest,
+    CreatePaymentKeyResponse,
+)
 
 
 class Paymob:
-    api_calls = 0
-
     def __init__(self, api_key):
         self.api_key = api_key
 
         self._client = PaymobClient(base_url=URLs.BASE_URL)
         self._token = None
 
+    def auth_token(self):
+        if self._token:
+            return self._token
+
+        raise PaymobError("No token found, did you forget to call .authenticate() ?")
+
     async def authenticate(self) -> str:
         response = await self._client.post(URLs.AUTH, json=dict(api_key=self.api_key))
-
-        try:
-            response = response.json()
-        except json.JSONDecodeError as e:
-            raise PaymobError('Response is not valid json:\n {}', str(e))
-
+        response = response.json()
         response = AuthResponse(**response)
         self._token = response.token
         return response.token
 
-    async def create_order(self, data) -> CreateOrderResponse:
-        self.api_calls += 1
-
+    async def create_order(self, data: Mapping) -> CreateOrderResponse:
         data = CreateOrderRequest(**data)
 
-        response = await self._client.post(URLs.CREATE_ORDER, json={
-            "auth_token": self._token,
-            **data.dict(),
-        })
+        response = await self._client.post(
+            URLs.CREATE_ORDER,
+            json={
+                "auth_token": self.auth_token,
+                **data.dict(),
+            },
+        )
 
-        try:
-            response = response.json()
-        except json.JSONDecodeError as e:
-            raise PaymobError('Response is not valid json:\n {}', str(e))
+        response = response.json()
 
-        if response.get('message') == "duplicate":
-            raise PaymobError("Order with merchant_order_id={id} already exists.".format(
-                id=data.merchant_order_id
-            ))
+        if response.get("message") == "duplicate":
+            raise PaymobError(
+                "Order with merchant_order_id={id} already exists.".format(
+                    id=data.merchant_order_id
+                )
+            )
 
         return CreateOrderResponse(**response)
 
+    async def pay(
+        self,
+        cents: int,
+        currency: str,
+        order_id: int,
+        integration_id: int,
+        data: Mapping,
+    ) -> CreatePaymentKeyResponse:
+        data = CreatePaymentKeyRequest(**data)
 
-async def main():
-    paymob = Paymob(api_key=API_KEY)
+        response = await self._client.post(
+            URLs.REQUEST_PAYMENT_KEY,
+            json={
+                "auth_token": self.auth_token,
+                "order_id": order_id,
+                "amount_cents": str(cents),
+                "currency": currency,
+                "lock_order_when_paid": False,
+                "integration_id": integration_id,
+                **data.dict(),
+            },
+        )
 
-    await paymob.authenticate()
-    order = await paymob.create_order(data={
-        "delivery_needed": False,
-        "amount_cents": 500,
-        "currency": "EGP",
-        "items": [
-            dict(name="Item 3", amount_cents=200, description="Item 1 desc", quantity=1),
-            dict(name="Item 4", amount_cents=300, description="Item 1 desc", quantity=1),
-        ],
-        "shipping_data": {
-            "apartment": "803",
-            "email": "claudette09@exa.com",
-            "floor": "42",
-            "first_name": "Clifford",
-            "street": "Ethan Land",
-            "building": "8028",
-            "phone_number": "+86(8)9135210487",
-            "postal_code": "01898",
-            "extra_description": "8 Ram , 128 Giga",
-            "city": "Jaskolskiburgh",
-            "country": "CR",
-            "last_name": "Nicolas",
-            "state": "Utah"
-        }
-    })
+        return response.json()
 
-    print(paymob.api_calls)
-    print(order)
+    async def __aenter__(self):
+        await self.authenticate()
+        return self
 
-
-asyncio.run(main())
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._client.aclose()
