@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name="paymobpy",
-    version="1.0.1",
+    version="1.0.2",
     description="A client library for paymob API",
     author="LeOndaz",
     author_email="ahmeddark369@gmail.com",
