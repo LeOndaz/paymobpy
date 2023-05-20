@@ -6,7 +6,6 @@ import httpx
 from paymobpy.exceptions import PaymobError
 from paymobpy.http_clients import PaymobClient
 from paymobpy.schemas import AuthResponse, CreateOrderResponse, CreateOrderRequest
-from paymobpy.utils import pretty_print
 
 API_KEY = """
 ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnVZVzFsSWpvaWFXNXBkR2xoYkNJc0ltTnNZWE56SWpvaVRXVnlZMmhoYm5RaUxDSndjbTltYVd4bFgzQnJJam94TnpFM056bDkuX2hxcEp2Q1F0NFFpeWNDUXozYS1abGQ4dHhpeTI2QnBFS0ZuWC1HRmxIRldIalJ6OFEtVzBoa0RVaDEyaTk1RW9CRmMtZ0V6bmhDVUZXMVlqVzBCVWc=
