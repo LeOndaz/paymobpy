@@ -19,6 +19,7 @@ class Paymob:
         self._client = PaymobClient(base_url=URLs.BASE_URL)
         self._token = None
 
+    @property
     def auth_token(self):
         if self._token:
             return self._token

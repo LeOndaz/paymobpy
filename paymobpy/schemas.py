@@ -104,7 +104,6 @@ class CreateOrderResponse(BaseModel):
 class CreatePaymentKeyRequest(BaseModel):
     expiration: int
     billing_data: Address
-    integration_id: int
 
 
 class CreatePaymentKeyResponse(BaseModel):
